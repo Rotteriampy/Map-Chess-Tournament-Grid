@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Турнирная сетка</title>
+
+<style>
+body {
+  margin: 0;
+  padding: 40px;
+  background: #121212;
+  color: #e0e0e0;
+  font-family: Arial, sans-serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: url("2.png") center / 10% auto no-repeat;
+  opacity: 0.2;
+  z-index: -1;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.bracket {
+  display: flex;
+  gap: 80px;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-x: auto;
+}
+
+.round {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  min-width: 220px;
+}
+
+.round-title {
+  text-align: center;
+  font-size: 1.2em;
+  color: #aaa;
+}
+
+.match {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.player {
+  padding: 12px 16px;
+  background: #1e1e1e;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.player.win {
+  background: #2d4a2d;
+  border-color: #4caf50;
+  color: #fff;
+}
+
+.final-winner {
+  background: linear-gradient(135deg, #ffd700, #ffb300);
+  border-color: #fff3a0;
+  color: #000;
+  font-weight: bold;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.6);
+}
+
+
+.player.lose {
+  background: #4a2d2d;
+  border-color: #f44336;
+  opacity: 0.4;
+}
+
+.footer {
+  position: fixed;
+  bottom: 10px;
+  width: 100%;
+  text-align: center;
+  font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
+}
+
+.footer span {
+  color: #ffd700;
+  font-weight: bold;
+}
+
+.no-pair {
+  margin-top: 20px;
+  text-align: center;
+  color: #888;
+  font-style: italic;
+}
+</style>
+</head>
+<footer class="footer">
+  Created by <span>MAP</span>
+</footer>
+<body>
+<h1>Mappers Chess Cup</h1>
+<div id="bracket" class="bracket"></div>
+
+<script>
+const participants = [
+  { name: "Игрок 1", statuses: ["win", "win", "win", "win"] },
+  { name: "Игрок 2", statuses: ["lose"] },
+  { name: "Игрок 3", statuses: ["win", "lose"] },
+  { name: "Игрок 4", statuses: ["lose"] },
+  { name: "Игрок 5", statuses: ["win", "win", "lose"] },
+  { name: "Игрок 6", statuses: ["lose"] },
+  { name: "Игрок 7", statuses: ["win", "lose"] },
+  { name: "Игрок 8", statuses: ["lose"] },
+  { name: "Игрок 9", statuses: ["win", "win", "lose", "lose"] },
+  { name: "Игрок 10", statuses: ["lose"] },
+  { name: "Игрок 11", statuses: ["win", "lose"] }
+];
+
+function buildBracket() {
+  const bracket = document.getElementById("bracket");
+  bracket.innerHTML = "";
+
+  let currentPlayers = [...participants];
+  let roundNumber = 1;
+  let carryByePlayer = null;
+
+  while (currentPlayers.length > 1) {
+    const roundDiv = document.createElement("div");
+    roundDiv.className = "round";
+
+    const title = document.createElement("div");
+    title.className = "round-title";
+    title.textContent = `Раунд ${roundNumber}`;
+    roundDiv.appendChild(title);
+
+    const winners = [];
+    let noPairPlayer = null;
+
+    for (let i = 0; i < currentPlayers.length; i += 2) {
+      if (i + 1 < currentPlayers.length) {
+        const p1 = currentPlayers[i];
+        const p2 = currentPlayers[i + 1];
+
+        const s1 = p1.statuses[roundNumber - 1] || "";
+        const s2 = p2.statuses[roundNumber - 1] || "";
+
+        const match = document.createElement("div");
+        match.className = "match";
+
+        const d1 = document.createElement("div");
+        d1.className = "player " + (s1 === "win" ? "win" : s1 === "lose" ? "lose" : "");
+        d1.textContent = p1.name;
+
+        const d2 = document.createElement("div");
+        d2.className = "player " + (s2 === "win" ? "win" : s2 === "lose" ? "lose" : "");
+        d2.textContent = p2.name;
+
+        match.appendChild(d1);
+        match.appendChild(d2);
+        roundDiv.appendChild(match);
+
+        if (s1 === "win") winners.push(p1);
+        else if (s2 === "win") winners.push(p2);
+      } else {
+        noPairPlayer = currentPlayers[i];
+      }
+    }
+
+    if (noPairPlayer) {
+      const np = document.createElement("div");
+      np.className = "no-pair";
+      np.textContent = `${noPairPlayer.name} — без пары`;
+      roundDiv.appendChild(np);
+      carryByePlayer = noPairPlayer;
+    }
+
+    // 🔑 КЛЮЧЕВАЯ ЛОГИКА
+    if (winners.length % 2 === 1 && carryByePlayer) {
+      winners.push(carryByePlayer);
+      carryByePlayer = null;
+    }
+
+    bracket.appendChild(roundDiv);
+    currentPlayers = winners;
+    roundNumber++;
+  }
+
+  if (currentPlayers.length === 1) {
+    const final = document.createElement("div");
+    final.className = "round";
+
+    const title = document.createElement("div");
+    title.className = "round-title";
+    title.textContent = "Победитель";
+
+    const winner = document.createElement("div");
+    winner.className = "player win final-winner";
+    winner.style.fontSize = "1.5em";
+    winner.style.textAlign = "center";
+    winner.textContent = currentPlayers[0].name;
+
+    final.appendChild(title);
+    final.appendChild(winner);
+    bracket.appendChild(final);
+  }
+}
+
+buildBracket();
+</script>
+</body>
+</html>
