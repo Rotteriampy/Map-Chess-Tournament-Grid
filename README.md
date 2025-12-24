@@ -1,1 +1,0 @@
-# Map-Chess-Tournament-Grid
